@@ -1,0 +1,52 @@
+{
+  "name": "vanilla-signal-i18n",
+  "version": "0.2.0",
+  "private": false,
+  "description": "I18n is a responsive internationalization manager based on vanilla-signal.",
+  "keywords": [
+    "i18n",
+    "esm",
+    "internationalization",
+    "signal",
+    "umd",
+    "vanilla"
+  ],
+  "homepage": "https://github.com/WangShai123/vanilla-signal-i18n",
+  "bugs": {
+    "url": "https://github.com/WangShai123/vanilla-signal-i18n/issues"
+  },
+  "license": "ISC",
+  "author": "Wang Shai <hiwangshai@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WangShai123/vanilla-signal-i18n.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "browser": "./dist/index.umd.js",
+  "unpkg": "./dist/index.umd.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vp pack",
+    "dev": "vp pack --watch",
+    "test": "vp test",
+    "check": "vp check",
+    "prepublishOnly": "vp run build"
+  },
+  "dependencies": {
+    "vanilla-signal": "latest"
+  },
+  "devDependencies": {
+    "vite-plus": "latest"
+  }
+}
