@@ -1,11 +1,11 @@
 {
   "name": "vanilla-signal-i18n",
-  "version": "0.2.0",
+  "version": "1.1.0",
   "private": false,
   "description": "I18n is a responsive internationalization manager based on vanilla-signal.",
   "keywords": [
-    "i18n",
     "esm",
+    "i18n",
     "internationalization",
     "signal",
     "umd",

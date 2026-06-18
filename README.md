@@ -24,8 +24,8 @@ script:
 // esm
 import { I18n, createI18n, defaultI18n, t } from 'vanilla-signal-i18n';
 
-// umd: Global variable `vanilla-signal-i18n`
-const { I18n, createI18n, defaultI18n, t } = vanilla-signal-i18n;
+// umd: Global variable `vanillaSignalI18n`
+const { I18n, createI18n, defaultI18n, t } = vanillaSignalI18n;
 ```
 
 ## Basic Usage
@@ -163,10 +163,10 @@ unsubscribe();
 
 Event types:
 
-| Type              | Triggered When           |
-| ----------------- | ------------------------ |
-| `locale`          | Current language changes |
-| `fallback-locale` | Fallback language changes|
+| Type              | Triggered When                     |
+| ----------------- | ---------------------------------- |
+| `locale`          | Current language changes           |
+| `fallback-locale` | Fallback language changes          |
 | `messages`        | Language packs are set or appended |
 
 ## Default Instance
@@ -174,7 +174,13 @@ Event types:
 `defaultI18n` is the built-in default instance of the library. Legacy utility functions delegate to it:
 
 ```js
-import { setLanguages, getLanguages, getLocale, getLang, t } from 'vanilla-signal-i18n';
+import {
+  setLanguages,
+  getLanguages,
+  getLocale,
+  getLang,
+  t,
+} from 'vanilla-signal-i18n';
 
 setLanguages({
   en: { ok: 'OK' },
@@ -204,14 +210,14 @@ For new code requiring interpolation, dynamic language switching, or isolated la
 
 ## Options
 
-| Parameter        | Type                                  | Default   | Description                                    |
-| ---------------- | ------------------------------------- | --------- | ---------------------------------------------- |
-| `locale`         | `string`                              | Auto      | Initial language; reads html lang or browser if empty |
-| `fallbackLocale` | `string`                              | `'en'`    | Fallback language                              |
-| `messages`       | `Record<string, Record<string, any>>` | `{}`      | Language packs                                 |
-| `languages`      | `Record<string, Record<string, any>>` | `{}`      | Alias for `messages`, for backward compatibility |
-| `missing`        | `(payload: object) => string`         | `null`    | Handler function for missing translations      |
-| `warnMissing`    | `boolean`                             | `false`   | Whether to output warning for missing translations |
+| Parameter        | Type                                  | Default | Description                                           |
+| ---------------- | ------------------------------------- | ------- | ----------------------------------------------------- |
+| `locale`         | `string`                              | Auto    | Initial language; reads html lang or browser if empty |
+| `fallbackLocale` | `string`                              | `'en'`  | Fallback language                                     |
+| `messages`       | `Record<string, Record<string, any>>` | `{}`    | Language packs                                        |
+| `languages`      | `Record<string, Record<string, any>>` | `{}`    | Alias for `messages`, for backward compatibility      |
+| `missing`        | `(payload: object) => string`         | `null`  | Handler function for missing translations             |
+| `warnMissing`    | `boolean`                             | `false` | Whether to output warning for missing translations    |
 
 ## Instance Properties
 
@@ -219,24 +225,24 @@ The state of I18n is accessed via instance methods; no public properties are exp
 
 ## Instance Methods
 
-| Method                                   | Description                                |
-| ---------------------------------------- | ------------------------------------------ |
-| `getLocaleSignal()`                      | Get the signal accessor for the current locale |
-| `getLocale()`                            | Get the current locale                     |
-| `setLocale(locale)`                      | Set the current locale                     |
-| `getFallbackLocale()`                    | Get the fallback locale                    |
-| `setFallbackLocale(locale)`              | Set the fallback locale                    |
-| `setMessages(messages, options)`         | Set complete language packs                |
-| `setLanguages(messages)`                 | Compatible alias for `setMessages()`       |
-| `addMessages(locale, messages, options)` | Append or replace language pack for a specific locale |
+| Method                                   | Description                                                                |
+| ---------------------------------------- | -------------------------------------------------------------------------- |
+| `getLocaleSignal()`                      | Get the signal accessor for the current locale                             |
+| `getLocale()`                            | Get the current locale                                                     |
+| `setLocale(locale)`                      | Set the current locale                                                     |
+| `getFallbackLocale()`                    | Get the fallback locale                                                    |
+| `setFallbackLocale(locale)`              | Set the fallback locale                                                    |
+| `setMessages(messages, options)`         | Set complete language packs                                                |
+| `setLanguages(messages)`                 | Compatible alias for `setMessages()`                                       |
+| `addMessages(locale, messages, options)` | Append or replace language pack for a specific locale                      |
 | `getMessages(locale)`                    | Get language pack for a specific locale; returns all if no locale provided |
-| `getLanguages()`                         | Compatible alias for `getMessages()`       |
-| `has(key, options)`                      | Check if a key has an available translation|
-| `resolve(key, options)`                  | Resolve translation, returning matched locale and original value |
-| `t(key, params, options)`                | Get translated text and perform interpolation |
-| `createTranslator(namespace, defaults)`  | Create a namespaced translation function   |
-| `subscribe(handler)`                     | Subscribe to i18n state changes, returns unsubscribe function |
-| `destroy()`                              | Clean up listeners and language packs      |
+| `getLanguages()`                         | Compatible alias for `getMessages()`                                       |
+| `has(key, options)`                      | Check if a key has an available translation                                |
+| `resolve(key, options)`                  | Resolve translation, returning matched locale and original value           |
+| `t(key, params, options)`                | Get translated text and perform interpolation                              |
+| `createTranslator(namespace, defaults)`  | Create a namespaced translation function                                   |
+| `subscribe(handler)`                     | Subscribe to i18n state changes, returns unsubscribe function              |
+| `destroy()`                              | Clean up listeners and language packs                                      |
 
 ## Translation Value Types
 
@@ -257,10 +263,10 @@ i18n.t('count', { value: 3 }); // 3 items
 
 Functions receive two parameters:
 
-| Parameter | Description                        |
-| --------- | ---------------------------------- |
+| Parameter | Description                                        |
+| --------- | -------------------------------------------------- |
 | `params`  | Interpolation parameters passed when calling `t()` |
-| `context` | `{ key, locale, i18n }`            |
+| `context` | `{ key, locale, i18n }`                            |
 
 ## Locale Rules
 

@@ -24,8 +24,8 @@ script:
 // esm
 import { I18n, createI18n, defaultI18n, t } from 'vanilla-signal-i18n';
 
-// umd: 全局变量 `vanilla-signal-i18n`
-const { I18n, createI18n, defaultI18n, t } = vanilla-signal-i18n;
+// umd: 全局变量 `vanillaSignalI18n`
+const { I18n, createI18n, defaultI18n, t } = vanillaSignalI18n;
 ```
 
 ## 基础使用
@@ -174,7 +174,13 @@ unsubscribe();
 `defaultI18n` 是库内置的默认实例。历史工具函数都委托给它：
 
 ```js
-import { setLanguages, getLanguages, getLocale, getLang, t } from 'vanilla-signal-i18n';
+import {
+  setLanguages,
+  getLanguages,
+  getLocale,
+  getLang,
+  t,
+} from 'vanilla-signal-i18n';
 
 setLanguages({
   en: { ok: 'OK' },

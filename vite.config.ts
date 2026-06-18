@@ -5,11 +5,16 @@ export default defineConfig({
     entry: 'src/index.js',
     outDir: 'dist',
     format: ['esm', 'umd'],
-    globalName: 'vanilla-signal-i18n',
+    globalName: 'vanillaSignalI18n',
     target: 'es2020',
     platform: 'browser',
     minify: true,
     clean: true,
+    outputOptions: {
+      globals: {
+        'vanilla-signal': 'vanillaSignal',
+      },
+    },
     outExtensions({ format }) {
       return {
         js: format === 'es' ? '.js' : '.js',
