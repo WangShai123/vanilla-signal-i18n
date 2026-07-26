@@ -1,6 +1,6 @@
 {
   "name": "vanilla-signal-i18n",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": false,
   "description": "I18n is a responsive internationalization manager based on vanilla-signal.",
   "keywords": [
@@ -22,12 +22,14 @@
     "url": "git+https://github.com/WangShai123/vanilla-signal-i18n.git"
   },
   "files": [
-    "dist"
+    "dist",
+    "src/index.ts"
   ],
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "browser": "./dist/index.umd.js",
+  "types": "./dist/index.d.ts",
   "unpkg": "./dist/index.umd.js",
   "exports": {
     ".": "./dist/index.js",

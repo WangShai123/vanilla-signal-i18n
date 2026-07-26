@@ -1,19 +1,81 @@
-import { createSignal } from 'vanilla-signal';
+import { createSignal, type Accessor, type Setter } from 'vanilla-signal';
 
 const DEFAULT_LOCALE = 'en';
 const DEFAULT_FALLBACK_LOCALE = 'en';
 const MESSAGE_TOKEN_RE = /\{([A-Za-z0-9_.-]+)\}/g;
 
-function isPlainObject(value) {
+type MessageParams = Record<string, any>;
+type MessageRecord = Record<string, any>;
+type LocaleMessages = Record<string, MessageRecord>;
+
+interface MessageContext {
+  key?: string;
+  locale?: string;
+  i18n?: I18n | null;
+  [key: string]: any;
+}
+
+type MissingHandler = (payload: {
+  key: string;
+  params: MessageParams;
+  options: TranslateOptions;
+  locale: string;
+  i18n: I18n;
+}) => string;
+
+interface I18nOptions {
+  locale?: string;
+  fallbackLocale?: string;
+  messages?: LocaleMessages;
+  languages?: LocaleMessages;
+  missing?: MissingHandler;
+  warnMissing?: boolean;
+  [key: string]: any;
+}
+
+interface SetMessagesOptions {
+  merge?: boolean;
+  [key: string]: any;
+}
+
+interface TranslateOptions {
+  locale?: string;
+  fallbackLocale?: string;
+  [key: string]: any;
+}
+
+interface ResolveResult {
+  found: boolean;
+  key: string;
+  locale: string;
+  value: any;
+}
+
+interface I18nEvent {
+  type: string;
+  locale?: string;
+  previousLocale?: string;
+  messages?: MessageRecord | LocaleMessages;
+  [key: string]: any;
+}
+
+type I18nListener = (event: I18nEvent) => void;
+type Translator = (
+  key: string,
+  params?: MessageParams,
+  options?: TranslateOptions | string
+) => string;
+
+function isPlainObject(value: unknown): value is MessageRecord {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const proto = Object.getPrototypeOf(value);
   return proto === Object.prototype || proto === null;
 }
 
-function cloneMessages(messages = {}) {
+function cloneMessages(messages: unknown = {}): MessageRecord {
   if (!isPlainObject(messages)) return {};
 
-  const result = {};
+  const result: MessageRecord = {};
   for (const [key, value] of Object.entries(messages)) {
     if (isPlainObject(value)) {
       result[key] = cloneMessages(value);
@@ -27,10 +89,12 @@ function cloneMessages(messages = {}) {
   return result;
 }
 
-function mergeMessages(target, source) {
+function mergeMessages(target: unknown, source: unknown): MessageRecord {
   const result = cloneMessages(target);
 
-  for (const [key, value] of Object.entries(source || {})) {
+  for (const [key, value] of Object.entries(
+    (source || {}) as Record<string, any>
+  )) {
     if (isPlainObject(value) && isPlainObject(result[key])) {
       result[key] = mergeMessages(result[key], value);
     } else {
@@ -41,8 +105,8 @@ function mergeMessages(target, source) {
   return result;
 }
 
-function normalizeMessages(messages = {}) {
-  const result = {};
+function normalizeMessages(messages: unknown = {}): LocaleMessages {
+  const result: LocaleMessages = {};
 
   if (!isPlainObject(messages)) return result;
 
@@ -53,22 +117,22 @@ function normalizeMessages(messages = {}) {
   return result;
 }
 
-function normalizeLocale(locale, fallback = DEFAULT_LOCALE) {
+function normalizeLocale(locale: unknown, fallback = DEFAULT_LOCALE): string {
   if (typeof locale !== 'string') return fallback;
 
   const value = locale.trim().replace(/_/g, '-').toLowerCase();
   return value || fallback;
 }
 
-function getLocaleBase(locale) {
+function getLocaleBase(locale: string): string {
   return String(locale || '').split('-')[0];
 }
 
-function uniq(list) {
+function uniq(list: string[]): string[] {
   return Array.from(new Set(list.filter(Boolean)));
 }
 
-function createLocaleChain(locale, fallbackLocale) {
+function createLocaleChain(locale: unknown, fallbackLocale: string): string[] {
   const current = normalizeLocale(locale, fallbackLocale);
   const fallback = normalizeLocale(fallbackLocale, DEFAULT_FALLBACK_LOCALE);
 
@@ -80,7 +144,7 @@ function createLocaleChain(locale, fallbackLocale) {
   ]);
 }
 
-function getPathValue(source, path) {
+function getPathValue(source: any, path: string): any {
   if (!source || typeof path !== 'string') return undefined;
   if (Object.prototype.hasOwnProperty.call(source, path)) return source[path];
 
@@ -90,7 +154,11 @@ function getPathValue(source, path) {
   }, source);
 }
 
-function formatMessage(value, params = {}, context = {}) {
+function formatMessage(
+  value: any,
+  params: MessageParams = {},
+  context: MessageContext = {}
+): string {
   const resolved =
     typeof value === 'function' ? value(params || {}, context) : value;
 
@@ -104,7 +172,7 @@ function formatMessage(value, params = {}, context = {}) {
   });
 }
 
-function resolveBrowserLocale(fallback = DEFAULT_LOCALE) {
+function resolveBrowserLocale(fallback = DEFAULT_LOCALE): string {
   if (typeof navigator === 'undefined') return fallback;
 
   const languages = Array.isArray(navigator.languages)
@@ -115,14 +183,14 @@ function resolveBrowserLocale(fallback = DEFAULT_LOCALE) {
   return normalizeLocale(locale, fallback);
 }
 
-function resolveDocumentLocale() {
+function resolveDocumentLocale(): string | null {
   if (typeof document === 'undefined') return null;
 
   const langAttr = document.documentElement?.getAttribute('lang');
   return langAttr ? normalizeLocale(langAttr) : null;
 }
 
-function resolveInitialLocale(options = {}) {
+function resolveInitialLocale(options: I18nOptions = {}): string {
   const fallbackLocale = normalizeLocale(
     options.fallbackLocale,
     DEFAULT_FALLBACK_LOCALE
@@ -137,7 +205,7 @@ function resolveInitialLocale(options = {}) {
   return normalizeLocale(detected, fallbackLocale);
 }
 
-function looksLikeMessagesMap(value) {
+function looksLikeMessagesMap(value: unknown): value is LocaleMessages {
   if (!isPlainObject(value)) return false;
 
   return Object.values(value).some((item) => {
@@ -145,7 +213,12 @@ function looksLikeMessagesMap(value) {
   });
 }
 
-function translateFromMessages(key, messages, locale, fallbackLocale = 'en') {
+function translateFromMessages(
+  key: string,
+  messages: unknown,
+  locale: unknown,
+  fallbackLocale = 'en'
+): string {
   const normalizedMessages = normalizeMessages(messages);
   const chain = createLocaleChain(locale, fallbackLocale);
 
@@ -159,12 +232,12 @@ function translateFromMessages(key, messages, locale, fallbackLocale = 'en') {
   return key;
 }
 
-function getLegacyBrowserLang() {
+function getLegacyBrowserLang(): 'en' | 'zh' {
   if (typeof navigator === 'undefined') return 'en';
   return navigator.language.toLowerCase().startsWith('en') ? 'en' : 'zh';
 }
 
-function getLegacyDocumentLocale() {
+function getLegacyDocumentLocale(): 'en' | 'zh' {
   if (typeof document === 'undefined') return getLegacyBrowserLang();
 
   const langAttr = document.documentElement.getAttribute('lang');
@@ -192,16 +265,18 @@ function getLegacyDocumentLocale() {
  * locale 或 messages 变化会触发依赖重新计算。
  */
 export class I18n {
-  /**
-   * @param {object} [options={}] 国际化配置。
-   * @param {string} [options.locale] 初始语言。
-   * @param {string} [options.fallbackLocale="en"] 回退语言。
-   * @param {Record<string, Record<string, any>>} [options.messages] 语言包。
-   * @param {Record<string, Record<string, any>>} [options.languages] 语言包别名。
-   * @param {(payload: object)=>string} [options.missing] 缺失翻译时的处理函数。
-   * @param {boolean} [options.warnMissing=false] 缺失翻译时是否输出 warning。
-   */
-  constructor(options = {}) {
+  declare private _locale: Accessor<string>;
+  declare private _setLocaleSignal: Setter<string>;
+  declare private _fallbackLocale: Accessor<string>;
+  declare private _setFallbackSignal: Setter<string>;
+  declare private _version: Accessor<number>;
+  declare private _setVersion: Setter<number>;
+  declare private _messages: LocaleMessages;
+  declare private _listeners: Set<I18nListener>;
+  declare private _missing: MissingHandler | null;
+  declare private _warnMissing: boolean;
+
+  constructor(options: I18nOptions = {}) {
     const fallbackLocale = normalizeLocale(
       options.fallbackLocale,
       DEFAULT_FALLBACK_LOCALE
@@ -231,28 +306,15 @@ export class I18n {
     this._warnMissing = options.warnMissing === true;
   }
 
-  /**
-   * 获取 locale signal accessor。
-   * @returns {Function}
-   */
-  getLocaleSignal() {
+  getLocaleSignal(): Accessor<string> {
     return this._locale;
   }
 
-  /**
-   * 获取当前语言。
-   * @returns {string}
-   */
-  getLocale() {
+  getLocale(): string {
     return this._locale();
   }
 
-  /**
-   * 设置当前语言。
-   * @param {string} locale 语言代码。
-   * @returns {I18n}
-   */
-  setLocale(locale) {
+  setLocale(locale: string): this {
     const previousLocale = this._locale.peek
       ? this._locale.peek()
       : this._locale();
@@ -270,20 +332,11 @@ export class I18n {
     return this;
   }
 
-  /**
-   * 获取回退语言。
-   * @returns {string}
-   */
-  getFallbackLocale() {
+  getFallbackLocale(): string {
     return this._fallbackLocale();
   }
 
-  /**
-   * 设置回退语言。
-   * @param {string} locale 语言代码。
-   * @returns {I18n}
-   */
-  setFallbackLocale(locale) {
+  setFallbackLocale(locale: string): this {
     const previousLocale = this._fallbackLocale.peek
       ? this._fallbackLocale.peek()
       : this._fallbackLocale();
@@ -301,14 +354,10 @@ export class I18n {
     return this;
   }
 
-  /**
-   * 设置完整语言包。
-   * @param {Record<string, Record<string, any>>} messages 语言包。
-   * @param {object} [options={}] 设置选项。
-   * @param {boolean} [options.merge=false] 是否与现有语言包深度合并。
-   * @returns {I18n}
-   */
-  setMessages(messages, options = {}) {
+  setMessages(
+    messages: LocaleMessages,
+    options: SetMessagesOptions = {}
+  ): this {
     const nextMessages = normalizeMessages(messages);
     this._messages = options.merge
       ? mergeMessages(this._messages, nextMessages)
@@ -318,24 +367,15 @@ export class I18n {
     return this;
   }
 
-  /**
-   * 设置完整语言包，兼容旧 utilities API。
-   * @param {Record<string, Record<string, any>>} messages 语言包。
-   * @returns {I18n}
-   */
-  setLanguages(messages) {
+  setLanguages(messages: LocaleMessages): this {
     return this.setMessages(messages);
   }
 
-  /**
-   * 为指定语言追加语言包。
-   * @param {string} locale 语言代码。
-   * @param {Record<string, any>} messages 语言文案。
-   * @param {object} [options={}] 设置选项。
-   * @param {boolean} [options.merge=true] 是否与现有语言包深度合并。
-   * @returns {I18n}
-   */
-  addMessages(locale, messages, options = {}) {
+  addMessages(
+    locale: string,
+    messages: MessageRecord,
+    options: SetMessagesOptions = {}
+  ): this {
     const lang = normalizeLocale(locale, this.getFallbackLocale());
     const merge = options.merge !== false;
     const current = this._messages[lang] || {};
@@ -356,12 +396,9 @@ export class I18n {
     return this;
   }
 
-  /**
-   * 获取语言包。
-   * @param {string} [locale] 指定语言，为空时返回完整语言包。
-   * @returns {Record<string, any>}
-   */
-  getMessages(locale) {
+  getMessages(): LocaleMessages;
+  getMessages(locale: string): MessageRecord;
+  getMessages(locale?: string): LocaleMessages | MessageRecord {
     this._version();
 
     if (!locale) return this._messages;
@@ -370,35 +407,15 @@ export class I18n {
     return this._messages[lang] || {};
   }
 
-  /**
-   * 获取完整语言包，兼容旧 utilities API。
-   * @returns {Record<string, Record<string, any>>}
-   */
-  getLanguages() {
+  getLanguages(): LocaleMessages {
     return this.getMessages();
   }
 
-  /**
-   * 判断指定 key 是否有翻译。
-   * @param {string} key 文案 key，支持点路径。
-   * @param {object} [options={}] 翻译选项。
-   * @param {string} [options.locale] 指定语言。
-   * @param {string} [options.fallbackLocale] 指定回退语言。
-   * @returns {boolean}
-   */
-  has(key, options = {}) {
+  has(key: string, options: TranslateOptions = {}): boolean {
     return this.resolve(key, options).found;
   }
 
-  /**
-   * 解析翻译，不进行插值。
-   * @param {string} key 文案 key，支持点路径。
-   * @param {object} [options={}] 翻译选项。
-   * @param {string} [options.locale] 指定语言。
-   * @param {string} [options.fallbackLocale] 指定回退语言。
-   * @returns {{found:boolean,key:string,locale:string,value:any}}
-   */
-  resolve(key, options = {}) {
+  resolve(key: string, options: TranslateOptions = {}): ResolveResult {
     this._version();
 
     const locale = normalizeLocale(
@@ -431,14 +448,11 @@ export class I18n {
     };
   }
 
-  /**
-   * 获取翻译文案。
-   * @param {string} key 文案 key，支持点路径。
-   * @param {Record<string, any>} [params={}] 插值参数。
-   * @param {object|string} [options={}] 翻译选项或 locale 字符串。
-   * @returns {string}
-   */
-  t(key, params = {}, options = {}) {
+  t(
+    key: string,
+    params: MessageParams = {},
+    options: TranslateOptions | string = {}
+  ): string {
     const translateOptions =
       typeof options === 'string' ? { locale: options } : options || {};
     const result = this.resolve(key, translateOptions);
@@ -454,13 +468,10 @@ export class I18n {
     });
   }
 
-  /**
-   * 创建带命名空间的翻译函数。
-   * @param {string} namespace 文案命名空间。
-   * @param {object} [defaults={}] 默认翻译选项。
-   * @returns {(key:string, params?:Record<string, any>, options?:object|string)=>string}
-   */
-  createTranslator(namespace, defaults = {}) {
+  createTranslator(
+    namespace: string,
+    defaults: TranslateOptions = {}
+  ): Translator {
     const prefix = namespace ? `${namespace}.` : '';
 
     return (key, params = {}, options = {}) => {
@@ -474,12 +485,7 @@ export class I18n {
     };
   }
 
-  /**
-   * 订阅 i18n 状态变化。
-   * @param {(event: object)=>void} listener 监听函数。
-   * @returns {Function} 取消订阅函数。
-   */
-  subscribe(listener) {
+  subscribe(listener: I18nListener): () => void {
     if (typeof listener !== 'function') {
       throw new Error('I18n.subscribe(): listener expects a function.');
     }
@@ -490,27 +496,28 @@ export class I18n {
     };
   }
 
-  /**
-   * 销毁当前 i18n 实例。
-   * @returns {void}
-   */
-  destroy() {
+  destroy(): void {
     this._listeners.clear();
     this._messages = {};
     this._touch();
   }
 
-  _touch() {
+  private _touch(): void {
     this._setVersion((value) => value + 1);
   }
 
-  _notify(event) {
+  private _notify(event: I18nEvent): void {
     for (const listener of Array.from(this._listeners)) {
       listener(event);
     }
   }
 
-  _handleMissing(key, params, options, result) {
+  private _handleMissing(
+    key: string,
+    params: MessageParams,
+    options: TranslateOptions,
+    result: ResolveResult
+  ): string {
     if (this._missing) {
       return this._missing({
         key,
@@ -529,12 +536,7 @@ export class I18n {
   }
 }
 
-/**
- * 创建响应式 i18n 实例。
- * @param {object} [options={}] 国际化配置。
- * @returns {I18n}
- */
-export function createI18n(options = {}) {
+export function createI18n(options: I18nOptions = {}): I18n {
   return new I18n(options);
 }
 
@@ -543,50 +545,27 @@ export const defaultI18n = createI18n({
   fallbackLocale: DEFAULT_FALLBACK_LOCALE,
 });
 
-/**
- * 设置默认 i18n 实例的语言包。
- * @param {Record<string, Record<string, any>>} obj 语言包对象。
- * @returns {void}
- */
-export function setLanguages(obj) {
+export function setLanguages(obj: LocaleMessages): void {
   defaultI18n.setLanguages(obj);
 }
 
-/**
- * 获取默认 i18n 实例的语言包。
- * @returns {Record<string, Record<string, any>>}
- */
-export function getLanguages() {
+export function getLanguages(): LocaleMessages {
   return defaultI18n.getLanguages();
 }
 
-/**
- * 获取当前默认语言。
- * @returns {string}
- */
-export function getLocale() {
+export function getLocale(): string {
   return defaultI18n.getLocale();
 }
 
-/**
- * 根据浏览器语言判断当前语言，兼容旧 utilities API。
- * @returns {"en"|"zh"}
- */
-export function getLang() {
+export function getLang(): 'en' | 'zh' {
   return getLegacyBrowserLang();
 }
 
-/**
- * 获取指定 key 的本地化文案。
- *
- * 兼容旧签名 `t(key, languages, lang)`，也支持新签名
- * `t(key, params, options)`。
- * @param {string} key 文案 key。
- * @param {Record<string, any>|Record<string, Record<string, any>>} [paramsOrLanguages={}] 插值参数或语言包。
- * @param {object|string|null} [optionsOrLang=null] 翻译选项或语言代码。
- * @returns {string}
- */
-export function t(key, paramsOrLanguages = {}, optionsOrLang = null) {
+export function t(
+  key: string,
+  paramsOrLanguages: MessageParams | LocaleMessages = {},
+  optionsOrLang: TranslateOptions | string | null = null
+): string {
   if (looksLikeMessagesMap(paramsOrLanguages)) {
     return translateFromMessages(
       key,
