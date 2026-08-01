@@ -1,6 +1,6 @@
 {
   "name": "vanilla-signal-i18n",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "private": false,
   "description": "I18n is a responsive internationalization manager based on vanilla-signal.",
   "keywords": [

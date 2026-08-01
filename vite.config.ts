@@ -21,7 +21,7 @@ export default defineConfig({
       };
     },
     dts: true,
-    exports: true,
+    exports: false,
   },
 
   lint: {
